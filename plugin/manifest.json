@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "mortbrew.openrouter-cost",
+  "name": "OpenRouter cost",
+  "version": "1.0.0",
+  "author": "mortbrew",
+  "description": "Today's OpenRouter spend in the Omarchy bar.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Cost.qml"
+  },
+  "barWidget": {
+    "displayName": "OpenRouter cost",
+    "description": "Today's OpenRouter spend, refreshed periodically.",
+    "category": "Status",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "intervalMinutes": 15,
+      "range": "today",
+      "showIcon": true
+    },
+    "schema": [
+      {
+        "key": "intervalMinutes",
+        "type": "integer",
+        "label": "Refresh interval (minutes)",
+        "min": 1,
+        "max": 240,
+        "step": 1,
+        "defaultValue": 15
+      },
+      {
+        "key": "range",
+        "type": "string",
+        "label": "Range",
+        "defaultValue": "today"
+      },
+      {
+        "key": "showIcon",
+        "type": "boolean",
+        "label": "Show icon",
+        "defaultValue": true
+      }
+    ]
+  }
+}
