@@ -135,7 +135,29 @@ Then add it to the bar in `~/.config/omarchy/shell.json`:
 }
 ```
 
-under `bar.layout.right`. Click the widget to refresh it immediately.
+under `bar.layout.right`.
+
+### Choosing which horizons show
+
+**Left click** the widget to open a popup listing the four horizons — last hour,
+today, last 7 days, last 30 days — each with a toggle. The ticked ones are the
+ones the bar shows. The choice is written back to `shell.json` as a `visible`
+setting, so it survives a restart:
+
+```json
+{
+  "id": "mortbrew.openrouter-cost",
+  "intervalMinutes": 3,
+  "visible": "1h,today,7d,30d"
+}
+```
+
+The last remaining horizon cannot be switched off, so the widget can never
+render empty and strand the popup. An empty or unrecognised `visible` value
+falls back to showing all four.
+
+**Right click** refreshes immediately. The popup also carries a Refresh button
+and shows the current interval.
 
 ### Refresh interval
 
