@@ -114,6 +114,7 @@ omarchy-router --key cursor-omarchy --range today
 omarchy-router --json      # raw rows
 omarchy-router --debug     # dump raw API responses to stderr
 omarchy-router --brief     # one line: 1h, today, 7d, 30d
+omarchy-router --stats     # one line per horizon, full stat set
 ```
 
 ## Omarchy bar widget
@@ -139,10 +140,10 @@ under `bar.layout.right`.
 
 ### Choosing which horizons show
 
-**Left click** the widget to open a popup listing the four horizons — last hour,
-today, last 7 days, last 30 days — each with a toggle. The ticked ones are the
-ones the bar shows. The choice is written back to `shell.json` as a `visible`
-setting, so it survives a restart:
+**Left click** the widget to open a popup with the full breakdown per horizon —
+total spend, requests, token volume, cache hit rate, and blended $/M tokens —
+each with a toggle. The ticked ones are the ones the bar shows. The choice is
+written back to `shell.json` as a `visible` setting, so it survives a restart:
 
 ```json
 {
@@ -159,9 +160,14 @@ falls back to showing all four.
 **Right click** refreshes immediately. The popup also carries a Refresh button
 and shows the current interval.
 
+The bar prefixes the numbers with DeepSeek's mark (`U+E911` from Omarchy's own
+icon font), since the widget is built for a DeepSeek-only setup. Set
+`"showIcon": false` to drop it, or `"showLabels": false` to hide the `1h` /
+`today` / `7d` / `30d` labels.
+
 ### Refresh interval
 
-The widget runs `omarchy-router --brief`, which issues **4 analytics queries**
+The widget runs `omarchy-router --stats`, which issues **4 analytics queries**
 (one per horizon). OpenRouter rate-limits the analytics endpoint at **64
 requests/minute**, so even a 1-minute interval uses ~6% of the budget.
 
