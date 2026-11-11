@@ -79,6 +79,10 @@ struct Cli {
     #[arg(long)]
     brief: bool,
 
+    /// One line per horizon with the full stat set, for the bar popup
+    #[arg(long)]
+    stats: bool,
+
     /// Dump raw API responses
     #[arg(long)]
     debug: bool,
@@ -122,6 +126,10 @@ fn run() -> Result<()> {
 
     if cli.brief {
         return print_brief(&key, &cli);
+    }
+
+    if cli.stats {
+        return print_stats(&key, &cli);
     }
 
     if cli.list_keys {
@@ -392,8 +400,88 @@ fn print_brief(key: &str, cli: &Cli) -> Result<()> {
     Ok(())
 }
 
-fn print_table(
-    rows: &[Value],
+/// One line per horizon with the full stat set, for the bar popup.
+///
+/// Each line is `label cost requests tokens cache_hit blended`, space
+/// separated, so the widget can parse it without a JSON dependency. Values are
+/// raw numbers; the widget owns the formatting.
+fn print_stats(key: &str, cli: &Cli) -> Result<()> {
+    let now = chrono::Utc::now();
+    let midnight = ranges::local_midnight();
+
+    let windows = [
+        ("1h", now - chrono::Duration::hours(1), now),
+        ("today", midnight, now),
+        ("7d", now - chrono::Duration::days(7), now),
+        ("30d", now - chrono::Duration::days(30), now),
+    ];
+
+    let mut filters: Vec<Value> = Vec::new();
+    if let Some(target) = key_filter(key, cli)? {
+        filters.push(json!({ "field": "api_key_id", "operator": "eq", "value": target }));
+    }
+
+    let metrics = [
+        "total_usage",
+        "request_count",
+        "tokens_total",
+        "cache_hit_rate",
+        "blended_cost_per_million_tokens",
+    ];
+
+    for (label, start, end) in windows {
+        let payload = api::run_query(
+            key,
+            &metrics,
+            &[],
+            &ranges::iso(start),
+            &ranges::iso(end),
+            None,
+            &filters,
+            1,
+        )?;
+        let rows = format::rows_of(&payload);
+
+        // With no dimensions the API returns a single aggregate row, but sum
+        // defensively in case that ever changes.
+        let mut cost = 0.0;
+        let mut requests = 0.0;
+        let mut tokens = 0.0;
+        let mut cache_hits = 0.0;
+        let mut cache_n = 0usize;
+        let mut blended = 0.0;
+        let mut blended_n = 0usize;
+
+        for row in &rows {
+            cost += format::num(row.get("total_usage"));
+            requests += format::num(row.get("request_count"));
+            tokens += format::num(row.get("tokens_total"));
+
+            // Rates are averages, not sums: average the non-zero rows.
+            let hit = format::num(row.get("cache_hit_rate"));
+            if hit != 0.0 {
+                cache_hits += hit;
+                cache_n += 1;
+            }
+            let blend = format::num(row.get("blended_cost_per_million_tokens"));
+            if blend != 0.0 {
+                blended += blend;
+                blended_n += 1;
+            }
+        }
+
+        let cache_hit = if cache_n > 0 { cache_hits / cache_n as f64 } else { 0.0 };
+        let blended_avg = if blended_n > 0 { blended / blended_n as f64 } else { 0.0 };
+
+        println!(
+            "{label} {cost:.4} {requests:.0} {tokens:.0} {cache_hit:.4} {blended_avg:.6}"
+        );
+    }
+
+    Ok(())
+}
+
+fn print_table(    rows: &[Value],
     chosen: &[&Metric],
     dimensions: &[String],
     window: &ranges::Window,
